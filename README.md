@@ -26,3 +26,4 @@
 
 ## 目標
 協助使用者快速掌握 PTT 熱門話題與關鍵字。
+# ptt-hot-topic-analyzer
