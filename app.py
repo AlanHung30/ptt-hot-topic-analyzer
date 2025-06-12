@@ -9,8 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
+
 # --- 共用分詞與過濾函式 ---
-def extract_keywords(text, stopwords, meaningless_words, chinese_prepositions, english_prepositions):
+def extract_keywords(text, stopwords, meaningless_words, english_prepositions):
     import jieba
     import re
     is_chinese = lambda w: re.fullmatch(r'[\u4e00-\u9fff]{2,}', w)
@@ -20,24 +21,34 @@ def extract_keywords(text, stopwords, meaningless_words, chinese_prepositions, e
     for w in ws:
         if is_single_alpha(w):
             continue
-        if is_chinese(w) and w not in stopwords and w not in meaningless_words and w not in chinese_prepositions:
+        if is_chinese(w) and w not in stopwords and w not in meaningless_words:
             filtered.append(w)
         elif re.fullmatch(r'[A-Za-z]+', w):
             if w.lower() not in english_prepositions and w.lower() not in meaningless_words and not is_single_alpha(w):
                 filtered.append(w)
-    # 再次排除含數字、無意義詞、中文介詞、單一字母
-    filtered = [w for w in filtered if not re.search(r'\d', w) and w not in meaningless_words and w not in chinese_prepositions and not is_single_alpha(w)]
+    # 再次排除含數字、無意義詞、單一字母
+    filtered = [w for w in filtered if not re.search(r'\d', w) and w not in meaningless_words and not is_single_alpha(w)]
     return filtered
+
+
+# --- 全域無意義詞彙集合，首頁與 /wordcloud.png 共用 ---
+meaningless_words = {
+    '關於', '由於', '因為', '為了', '根據', '依照', '按照', '隨著', '經過', '透過', '直到', '除了', '沿著',
+    '依據', '通過', '對於', '至於', '從而', '從此', '從前', '從今', '從小', '從大', '從此以後',
+    '最終', '竟是', '旁白', '然而', '更是', '不知', '所謂', '便是',
+    '這種','其他','表示','知道','獲得','文章','認為','還有','成為','一堆','繼續','只能','雖然','那個','這些','需要','甚至','指出','有人','一樣','無法','各位','進行', '以前','非常','以及','才能',
+    '只是','很多','不能','覺得','而且','那邊','只要','一下', '只有','一定','不用','出來','那麼','到底','包括','出現','這是','是否','今日','其中','我們', '還有', '這個', '應該', '不過', '怎麼', '是不是', '不會', '今天', '今年',
+    '直接','這次','還要','看看','之前','事情','地方','不要','不用','完成',
+    '接受','他們','一個','包括','這麼','了解','重要','希望','透露','影響','未來',
+    '最近','八卦','結果','反而','時候','或是','當時','根本','想要','人家','想到','一直','因此','感覺','',
+}
 
 app = Flask(__name__)
 
 # 文字雲圖片路由
 @app.route('/wordcloud.png')
 def wordcloud_png():
-    # 常見中文介詞（2字以上）
-    chinese_prepositions = {
-        '關於', '這種','其他','表示','知道','獲得','文章','認為','還有','成為','一堆','繼續','只能','雖然','那個','這些','需要','甚至','指出','有人','一樣','無法','各位','進行', '以前','非常','以及','才能', '因為', '為了', '根據', '依照', '按照', '隨著', '經過', '透過', '直到', '除了', '直到', '沿著', '根據', '依據', '隨著', '經過', '通過', '透過', '由於', '因為', '為了', '關於', '對於', '至於', '直到', '從而', '從此', '從前', '從今', '從小', '從大', '只是','很多','不能','覺得','而且','那邊','只要','一下', '只有','一定','不用','出來','那麼','到底','包括','出現','這是','是否','今日','其中','從此以後'
-    }
+    # 不再於此定義 meaningless_words，統一用全域
     import matplotlib
     matplotlib.use('Agg')
     import jieba
@@ -55,8 +66,7 @@ def wordcloud_png():
         '備註', '綜合報導', '記者', '新聞', '作者', '標題', '時間', '發信站', '編輯', '留言', '推文', '內容', '網址', '來源', '更新', '網友', '圖片', '影片', '相關', '報導', '更多', '目前', '大家', '如果', '真的', '現在', '自己', '可以', '不是', '沒有', '就是', '什麼', '這樣', '已經', '還是', '但是', '因為', '所以', '可能', '一起', '看到', '感謝', '請問', '請教', '請益', '請問一下', '謝謝', '請', '問', '如題', '如上', '如圖', '如內文', '如標題', '如附件', '如連結', '如網址', '如影片', '如圖片', '如報導', '如新聞', '如備註', '如綜合報導',
         '情報', '閒聊', '討論', '花邊', '分享', '公告', '轉播', '心得', '問題', '電競'
     ])
-    # 額外過濾無意義詞彙
-    meaningless_words = {'我們', '知道', '還有', '這個', '應該', '不過', '這種', '其他', '怎麼', '是不是', '不會', '今天', '今年'}
+    # 不再於此定義 meaningless_words，統一用全域
     url_pattern = re.compile(r'https?://\S+')
     words = []
     is_chinese = lambda w: re.fullmatch(r'[\u4e00-\u9fff]{2,}', w)
@@ -75,7 +85,7 @@ def wordcloud_png():
             text = (a.get('title', '') + ' ' + a.get('content', '') + ' ' + ' '.join(comments)).replace('\n', ' ')
             text = re.sub(r'\s+', ' ', text)
             text = url_pattern.sub('', text)
-            filtered = extract_keywords(text, stopwords, meaningless_words, chinese_prepositions, english_prepositions)
+            filtered = extract_keywords(text, stopwords, meaningless_words, english_prepositions)
             words.extend(filtered)
     # 移除所有空字串
     words = [w for w in words if w and w.strip()]
@@ -283,42 +293,11 @@ def keyword_statistics_by_week(articles, keywords):
     result = {d.strftime('%Y-%m-%d'): day_stats[d] for d in last_7_days if d in day_stats}
     return result
 
-# 3. 話題趨勢圖
-def plot_trends(week_stats, keywords):
-    import matplotlib.font_manager as fm
-    font_path = 'C:/Windows/Fonts/msjh.ttc'
-    if os.path.exists(font_path):
-        from matplotlib import font_manager as fm
-        myfont = fm.FontProperties(fname=font_path)
-        plt.rcParams['font.sans-serif'] = [font_path]
-        plt.rcParams['axes.unicode_minus'] = False
-    else:
-        myfont = None
-    plt.figure(figsize=(12, 7))
-    periods = sorted(week_stats.keys())
-    for k in keywords:
-        y = [week_stats[w][k] for w in periods]
-        plt.plot(periods, y, marker='o', label=k)
-    plt.xlabel('月份', fontproperties=myfont)
-    plt.ylabel('出現次數', fontproperties=myfont)
-    plt.title('PTT 熱門關鍵字每月趨勢', fontproperties=myfont)
-    plt.legend(prop=myfont)
-    plt.tight_layout()
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    plt.close()
-    return buf
 
 @app.route('/')
 
 def index():
-    chinese_prepositions = {
-        '關於', '由於', '因為', '為了', '根據', '依照', '按照', '隨著', '經過', '透過', '直到', '除了', '直到', '沿著',
-        '根據', '依據', '隨著', '經過', '通過', '透過', '由於', '因為', '為了', '關於', '對於', '至於', '直到', '從而',
-        '從此', '從前', '從今', '從小', '從大', '從此以後',
-        '最終', '竟是', '旁白', '然而', '更是', '不知', '所謂', '便是'
-    }
+    # 不再於此定義 meaningless_words，統一用全域
     import datetime
     # 取得所有熱門看板
     boards = fetch_all_hot_boards()
@@ -360,9 +339,7 @@ def index():
               '如連結', '如網址', '如影片', '如圖片', '如報導', '如新聞', '如備註', '如綜合報導',
         '情報', '閒聊', '討論', '花邊', '分享', '公告', '轉播', '心得', '問題', '電競'
     ])
-    meaningless_words = {'我們', '知道', '還有', '這個', '應該', '不過', '這種', '其他', '怎麼', '是不是', '不會', '今天', '直接','這次','只有','是否',
-                         '不能','只要','還要','這邊','那個','那邊','看看','只是','覺得','一定','之前','很多','其中','事情','地方','那麼','不要','不用','完成',
-                         '接受','他們','我們','一個','包括','這是','這麼','了解','出來','重要','今日','這是','希望','透露','影響','未來','最近','今天', '今年'}
+    # 不再於此定義 meaningless_words，統一用全域
     # 只取今日的文章
     today_str = today.strftime('%m/%d').lstrip('0').replace('/0', '/')
     today_articles = []
@@ -389,7 +366,7 @@ def index():
         text = (a.get('title', '') + ' ' + a.get('content', '') + ' ' + ' '.join(a.get('comments', []))).replace('\n', ' ')
         text = re.sub(r'\s+', ' ', text)
         text = url_pattern.sub('', text)
-        filtered = extract_keywords(text, stopwords, meaningless_words, chinese_prepositions, english_prepositions)
+        filtered = extract_keywords(text, stopwords, meaningless_words, english_prepositions)
         print(f"[DEBUG] 看板: {a.get('board', '其他')}, 分詞: {filtered}")
         board_words[a.get('board', '其他')].extend(filtered)
     # 取每個看板前5大關鍵字
@@ -495,7 +472,7 @@ def index():
     <html>
     <head>
         <meta charset="utf-8">
-        <title>PTT 熱門話題與關鍵字趨勢分析</title>
+        <title>PTT 熱門話題與關鍵字分析</title>
         <style>
             body {{ font-family: 'Segoe UI', '微軟正黑體', Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }}
             .container {{ max-width: 900px; margin: 30px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px #0001; padding: 32px 40px; }}
@@ -518,7 +495,7 @@ def index():
     </head>
     <body>
         <div class="container">
-            <h1>PTT 熱門話題與關鍵字趨勢分析</h1>
+            <h1>PTT 熱門話題與關鍵字分析</h1>
             <h2>熱門文章</h2>
             <ul>{article_html}</ul>
             <h2>今日熱門關鍵字雲</h2>
@@ -533,35 +510,8 @@ def index():
     '''
     return render_template_string(html)
 
-@app.route('/trend.png')
-def trend_png():
-    articles = fetch_hot_articles(pages=14)
-    keywords = ["八卦", "爆卦", "問卦", "新聞", "討論"]
-    week_stats = keyword_statistics_by_week(articles, keywords)
-    # 若 week_stats 為空或所有值都為 0，顯示預設圖片
-    has_data = False
-    for day in week_stats.values():
-        if any(v > 0 for v in day.values()):
-            has_data = True
-            break
-    if not week_stats or not has_data:
-        # 產生一張簡單的圖片顯示「無趨勢資料」
-        from PIL import Image, ImageDraw, ImageFont
-        img = Image.new('RGB', (800, 400), color=(255, 255, 255))
-        draw = ImageDraw.Draw(img)
-        try:
-            font = ImageFont.truetype('C:/Windows/Fonts/msjh.ttc', 48)
-        except:
-            font = None
-        text = '無趨勢資料'
-        w, h = draw.textsize(text, font=font)
-        draw.text(((800-w)//2, (400-h)//2), text, fill=(200,0,0), font=font)
-        buf = io.BytesIO()
-        img.save(buf, format='PNG')
-        buf.seek(0)
-        return send_file(buf, mimetype='image/png')
-    buf = plot_trends(week_stats, keywords)
-    return send_file(buf, mimetype='image/png')
+
+# 已移除 /trend.png 路由與趨勢圖功能
 
 if __name__ == "__main__":
     app.run(debug=True)
