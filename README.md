@@ -15,7 +15,7 @@
    ```
 2. 執行主程式：
    ```powershell
-   python main.py
+   python app.py
    ```
 
 ## 依賴套件
